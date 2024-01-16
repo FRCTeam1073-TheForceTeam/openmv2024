@@ -1,2 +1,1 @@
 # openmv
-OpenMV Made ByMe
