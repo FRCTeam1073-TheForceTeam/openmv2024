@@ -8,6 +8,7 @@
 
 import sensor
 import time
+import math
 
 sensor.reset()  # Reset and initialize the sensor.
 sensor.set_pixformat(sensor.RGB565)  # Set pixel format to RGB565 (or GRAYSCALE)
@@ -21,6 +22,26 @@ while True:
     #print(clock.fps())  # Note: OpenMV Cam runs about half as fast when connected
     # to the IDE. The FPS should increase once disconnected.
 
-    img.draw_line(0, 120, 320, 120, color=(255, 0, 0), thickness=2)
-    img.draw_line(200, 0, 50, 240, color=(0, 255, 0), thickness=2)
+    x_coor = [-140, 120]
+    y_coor = [-50, 30]
+    f_x = [x_coor[0] + 160, x_coor[1] + 160]
+    f_y = [-y_coor[0] + 120, -y_coor[1] + 120]
+    #img.draw_line(320, 120, 0, 120, color=(255, 0, 0), thickness=1) #draws a line in the middle of the screen for referance
+
+    img.draw_line(f_x[0], f_y[0], f_x[1], f_y[1], color=(0, 255, 0), thickness=2) #test line acting like tape
+
+    img.draw_circle(f_x[0], f_y[0], 4, color=(0, 0, 255), fill=True)
+    img.draw_circle(f_x[1], f_y[1], 4, color=(0, 0, 255), fill=True)
+
+    if(f_y[0] >= f_y[1]):
+        img.draw_line(0, f_y[0], 320, f_y[0], color=(255, 0, 0), fill=True)
+    elif(f_y[0] <= f_y[1]):
+        img.draw_line(0, f_y[1], 320, f_y[1], color=(255, 0, 0), fill=True)
+
+    x_dist = abs(f_x[1] - f_x[0])
+    y_dist = abs(f_y[1] - f_y[0])
+    theta = math.atan(y_dist/x_dist) * (180/math.pi)
+    print(theta)
+
+
 
