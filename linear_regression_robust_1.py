@@ -19,9 +19,7 @@
 import sensor
 import time
 
-#RGB Threshold doesn't work
-#THRESHOLD = (59, 63), (80, 118), (67, 104)  # Grayscale threshold for dark things.
-THRESHOLD = (14, 58, -7, 21, -65, -19)
+THRESHOLD = (65, 79, -27, -5, -45, -23)
 BINARY_VISIBLE = True  # Binary pass first to see what linear regression is running on.
 
 sensor.reset()
@@ -42,15 +40,20 @@ while True:
     # different for the robust linear regression. In general, the larger the value the
     # better...
     line = img.get_regression([(100, 255) if BINARY_VISIBLE else THRESHOLD], robust=True)
-    print(line.line)
 
+    print("X1: " + str(line.line()[0]) + ", X2: " + str(line.line()[2]))
+    print("Y1: " + str(line.line()[1]) + ", Y2: " + str(line.line()[3]))
 
     if line:
-        img.draw_line(line.line(), color=(255, 0, 0), thickness=5)
+        img.draw_line(line.line(), color=(255, 0, 0), thickness=2)
 
     #print(
      #   "FPS %f, mag = %s" % (clock.fps(), str(line.magnitude()) if (line) else "N/A")
     #)
+
+    def degrees(radians):
+        return (180 * radians) / math.pi
+
 
 # About negative rho values:
 #
