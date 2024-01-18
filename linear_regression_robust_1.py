@@ -18,8 +18,11 @@
 
 import sensor
 import time
+import math
 
-THRESHOLD = (65, 79, -27, -5, -45, -23)
+#RGB Threshold doesn't work
+#THRESHOLD = (59, 63), (80, 118), (67, 104)  # Grayscale threshold for dark things.
+THRESHOLD = (46, 56, -3, 14, -59, -41)
 BINARY_VISIBLE = True  # Binary pass first to see what linear regression is running on.
 
 sensor.reset()
@@ -41,19 +44,29 @@ while True:
     # better...
     line = img.get_regression([(100, 255) if BINARY_VISIBLE else THRESHOLD], robust=True)
 
-    print("X1: " + str(line.line()[0]) + ", X2: " + str(line.line()[2]))
-    print("Y1: " + str(line.line()[1]) + ", Y2: " + str(line.line()[3]))
-
-    if line:
-        img.draw_line(line.line(), color=(255, 0, 0), thickness=2)
-
-    #print(
-     #   "FPS %f, mag = %s" % (clock.fps(), str(line.magnitude()) if (line) else "N/A")
-    #)
 
     def degrees(radians):
         return (180 * radians) / math.pi
 
+    if line:
+        img.draw_line(line.line(), color=(255, 0, 0), thickness=2)
+        print(line.line)
+
+        x_dist = abs(line.line()[2] - line.line()[0])
+        y_dist = abs(line.line()[3] - line.line()[1])
+
+        if(x_dist != 0 and y_dist != 0):
+            theta = degrees(math.atan(y_dist / x_dist)) #gets rotation in degrees
+        elif(x_dist == 0):
+            theta = degrees(90)
+        elif(y_dist == 0):
+            theta = 0
+
+        print(theta)
+
+    #print(
+     #   "FPS %f, mag = %s" % (clock.fps(), str(line.magnitude()) if (line) else "N/A")
+    #)
 
 # About negative rho values:
 #
