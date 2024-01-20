@@ -17,10 +17,16 @@ from machine import Pin
 # example see the BLE-Shield driver.
 uart = UART(3, 19200, timeout_char=200)
 
-pin12 = Pin("P12", Pin.IN)
-#pin13 = Pin("P13", Pin.)
+pin4TX = Pin("P4", Pin.OUT_PP) #pin transmit enable?
+pin5RX = Pin("P5", Pin.OUT_PP) #recieve enable?
 
 
 while True:
-    uart.write("Hello World!\r")  # note: \r: ascii carriage return, \n: ascii line feed
+    #uart.write("Hello World!\r")  # note: \r: ascii carriage return, \n:    ascii line feed
+    pin4TX.value(0)
+    pin5RX.value(1)
+    print(uart.any())
+    message = uart.read()
+    print(message)
+    #print("Hello World")
     time.sleep_ms(1000)
