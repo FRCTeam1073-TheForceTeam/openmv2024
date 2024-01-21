@@ -15,16 +15,17 @@ from machine import Pin
 # Always pass UART 3 for the UART number for your OpenMV Cam.
 # The second argument is the UART baud rate. For a more advanced UART control
 # example see the BLE-Shield driver.
-uart = UART(3, 19200, timeout_char=200)
+uart = UART(3, 19200, bits=8, parity=0, stop=1, timeout_char=200)
 
 pin4TX = Pin("P4", Pin.OUT_PP) #pin transmit enable?
 pin5RX = Pin("P5", Pin.OUT_PP) #recieve enable?
+pin4TX.value(0)
+pin5RX.value(1)
 
 
 while True:
     #uart.write("Hello World!\r")  # note: \r: ascii carriage return, \n:    ascii line feed
-    pin4TX.value(0)
-    pin5RX.value(1)
+
     print(uart.any())
     message = uart.read()
     print(message)

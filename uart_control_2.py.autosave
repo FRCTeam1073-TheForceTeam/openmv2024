@@ -1,0 +1,35 @@
+# This work is licensed under the MIT license.
+# Copyright (c) 2013-2023 OpenMV LLC. All rights reserved.
+# https://github.com/openmv/openmv/blob/master/LICENSE
+#
+# UART Control
+#
+# This example shows how to use the serial port on your OpenMV Cam. Attach pin
+# P4 to the serial input of a serial LCD screen to see "Hello World!" printed
+# on the serial LCD display.
+
+import time
+from pyb import UART
+from machine import Pin
+
+# Always pass UART 3 for the UART number for your OpenMV Cam.
+# The second argument is the UART baud rate. For a more advanced UART control
+# example see the BLE-Shield driver.
+uart = UART(3, 19200, bits=8, parity=0, stop=1, timeout_char=200)
+
+
+pin4TX = Pin("P4", Pin.OUT_PP) #pin transmit enable?
+pin5RX = Pin("P5", Pin.OUT_PP) #recieve enable?
+pin4TX.value(0)
+pin5RX.value(1)
+
+pin4TX.init()
+
+while True:
+    #uart.write("Hello World!\r")  # note: \r: ascii carriage return, \n:    ascii line feed
+
+    print(uart.any())
+    message = uart.read()
+    print(message)
+    #print("Hello World")
+    time.sleep_ms(1000)
