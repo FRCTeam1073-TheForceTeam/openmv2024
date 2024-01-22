@@ -22,8 +22,9 @@ pin4TX = Pin("P4", Pin.OUT_PP) #pin transmit enable?
 pin5RX = Pin("P5", Pin.OUT_PP) #recieve enable?
 pin4TX.value(0)
 pin5RX.value(1)
-
-pin4TX.init()
+Pin.init("P4")
+Pin.init("P5")
+pin4TX
 
 while True:
     #uart.write("Hello World!\r")  # note: \r: ascii carriage return, \n:    ascii line feed
