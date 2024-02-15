@@ -22,6 +22,11 @@ control_pin.value(0)  # 0 should be receive
 
 while True:
     output = uart.readline()  # ".read()" by itself doesn't work, there's number of bytes, timeout, etc.
+    #output = uart.read(4)
     print(output)
+    #output_as_string = str(output)
+    #print(output_as_string)
+    if output == b'123abc\n':
+        print('got msg')
     time.sleep_ms(500)
 
