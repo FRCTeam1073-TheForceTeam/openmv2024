@@ -11,14 +11,14 @@
 import time
 from pyb import UART
 from machine import Pin
-#import numpy as np
 import random
+#import findapriltagsone
 
 CAM_ID = '1'
-
+print('started')
 
 class SerialComms():
-    def __init__(self, cam_id, baud_rate = 1000000, bits = 8, parity = 0, stop = 1, timeout_char = 2000):
+    def __init__(self, cam_id, baud_rate = 2000000, bits = 8, parity = 0, stop = 1, timeout_char = 2000):
         self.cam_id = cam_id
         self.baud_rate = baud_rate
         self.bits = bits
@@ -31,14 +31,13 @@ class SerialComms():
         self.control_pin = Pin("P3", Pin.OUT)
         self.control_pin.value(0)
 
-    def transmit(self, payload):
+    def transmit(self, data):
         self.control_pin.value(1)
-        for element in payload:
+        msg = ['1', 'ti'] + data
+        for element in msg:
             self.uart.write(element)
             self.uart.write(',')
-
-        self.uart.write('1,' + payload)
-        #time.sleep_ms(1000)
+        self.uart.write('\n')
         self.control_pin.value(0)
 
 
@@ -47,15 +46,14 @@ class Camera():
         pass
 
     def apriltags(self, args=6):
-        num_apriltags = 1 #change to call april tag stuff
-        answer = [0] * args * num_apriltags
-        for array_length in range(len(answer)):
-            answer[array_length] = random.randint(1, 10)
-        #answer = np.array(([0]*args)*num_apriltags)
-
-        #for answer_rows in range(args):
-            #for answer_colunms in range (num_apriltags):
-                #answer[args][num_apriltags] = random.randint(1, 10) #change to call april tag stuff
+        img = sensor.snapshot()
+        tags = img.find_apriltags()
+        tag_data = []
+        for tag in tags:
+            distance = math.sqrt(pow(math.sqrt(pow(tag.x_translation(), 2) + pow(tag.y_translation(), 2)), 2) + pow(tag.z_translation(), 2))
+            tag_values = [tag.id(), tag.x(), tag.y(), tag.rotation(), distance, tags.goodness()]
+            tag_data.append(tag_values)
+        return tag_data
 
     def gamepiece(self):
         pass
@@ -68,23 +66,24 @@ class Camera():
 serialcomms = SerialComms(1)
 camera = Camera()
 array = []
-while True:
-    output = serialcomms.uart.read(1)  # ".read()" by itself doesn't work, there's number of bytes, timeout, etc.
-    print(output)
-    array.append(output)
-    time.sleep_ms(500)
+#while True:
+#    output = serialcomms.uart.read(1)  # ".read()" by itself doesn't work, there's number of bytes, timeout, etc.
+#    print(output)
+#    array.append(output)
+#    time.sleep_ms(500)
 
-    if output ==  '\n' or output == '\r' or output == '\r\n':
-        continue
-    results = array[0]
-    if(results != CAM_ID):
-        array = []
-        continue
-    else:
-        if(array[2] == 'a'):
-            response = camera.apriltags()
-        elif(array[2] == 'g'):
-            response = camera.gamepiece()
-        response = array[0] + ',' + array[2] + response
-        serialcomms.transmit(response)
+#    if output ==  '\n' or output == '\r' or output == '\r\n':
+#        continue
+#    results = array[0]
+#    if(results != CAM_ID):
+#        array = []
+#        continue
+#    else:
+#        if(array[2] == 'a'):
+#            response = camera.apriltags()
+#        elif(array[2] == 'g'):
+#            response = camera.gamepiece()
+#        #response = array[0] + ',' + array[2] + response
+#        response = camera.apriltag()
+#        serialcomms.transmit(response)
 
