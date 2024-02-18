@@ -50,7 +50,6 @@ def transmit(msg):
     uart.write('\n')
     control_pin.value(0)
 
-
 m = None
 while True:
     #print('top of while')
@@ -70,6 +69,7 @@ while True:
             m = mjpeg.Mjpeg(filename)
             #transmit(b'ai')
         elif msg == b'di':
+            print("got di")
             if m is not None:  # if already disabled, do nothing
                 m.close()
                 m = None
