@@ -12,10 +12,15 @@ import machine
 import mjpeg
 #import camnet
 
+from camid import CAMID  # TODO: make CAMIDs regular strs not b''
+print(f'camera id: {CAMID}')
+
 sensor.reset()  # Reset and initialize the sensor.
 sensor.set_pixformat(sensor.RGB565)  # Set pixel format to RGB565 (or GRAYSCALE)
 sensor.set_framesize(sensor.QVGA)  # Set frame size to QVGA (320x240)
 sensor.skip_frames(time=2000)  # Wait for settings take effect.
+sensor.set_vflip(True)
+sensor.set_hmirror(True)
 
 # Always pass UART 3 for the UART number for your OpenMV Cam.
 # The second argument is the UART baud rate. For a more advanced UART control
@@ -57,20 +62,27 @@ while True:
     if uart.any() > 0:
         print(f'uart.any(): {uart.any()}')
         msg = uart.readline()  # ".read()" by itself doesn't work, there's number of bytes, timeout, etc.
+        msg = str(msg)
         print(f'msg: {msg}')
         led = machine.LED("LED_RED")
         led.on()
-        if msg == b'ti\n':
+        if msg[0] != CAMID:
+            print(f"we got a msg but it's not for our camid ({CAMID}): {msg}")
+        #elif msg == bytes(f'{CAMID},ti\n', 'ascii'):  #b'1,ti\n'
+        elif msg == f'{CAMID},ti\n':
             print('got teleop init')
             filename = compute_filename('ti')
             m = mjpeg.Mjpeg(filename)
             #transmit(b'ti')
-        elif msg == b'ai\n':
+        #elif msg == b'ai\n':
+        elif msg == f'{CAMID},ai\n':
             print('got auto init')
             filename = compute_filename('ai')
             m = mjpeg.Mjpeg(filename)
             #transmit(b'ai')
-        elif msg == b'di\n':
+        #elif msg == b'di\n':
+        #elif msg == bytes(f'{CAMID},di\n', 'ascii'):
+        elif msg == f'{CAMID},di\n':
             print("got di")
             if m is not None:  # if already disabled, do nothing
                 m.close()
@@ -83,4 +95,5 @@ while True:
     if m:
         m.add_frame(sensor.snapshot())
         print('added frame')
-    time.sleep_ms(50)
+    #time.sleep_ms(50)
+    time.sleep_ms(500)
