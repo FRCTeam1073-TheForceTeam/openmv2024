@@ -47,9 +47,9 @@ def compute_filename(prefix):  # prefix is 'ti' or 'ai'
     filename = f'{prefix}.{infix}.mjpeg'
     return filename
 
-def transmit(msg):
+def transmit(output): #TODO code for camera to reply to rio
     control_pin.value(1)
-    for element in msg:
+    for element in output:
         uart.write(element)
         uart.write(',')
     uart.write('\n')
@@ -57,12 +57,13 @@ def transmit(msg):
 
 m = None
 while True:
+    transmit('camera')
     #print('top of while')
     #print(uart.any())
     if uart.any() > 0:
         print(f'uart.any(): {uart.any()}')
         msg = uart.readline()  # ".read()" by itself doesn't work, there's number of bytes, timeout, etc.
-        msg = str(msg)
+        msg = msg.decode('ascii')
         print(f'msg: {msg}')
         led = machine.LED("LED_RED")
         led.on()
@@ -89,11 +90,11 @@ while True:
                 m = None
                 led.off()
                 #transmit(b'di')
-                #machine.reset()
+                machine.reset()
     # done with msg handling, do video
     print(m)
     if m:
         m.add_frame(sensor.snapshot())
         print('added frame')
     #time.sleep_ms(50)
-    time.sleep_ms(500)
+    time.sleep_ms(50)
