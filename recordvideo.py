@@ -30,7 +30,6 @@ control_pin = Pin("P3", Pin.OUT)
 control_pin.value(0)  # 0 should be receive
 #sc = camnet.SerialComms('1')
 
-
 def compute_filename(prefix):  # prefix is 'ti' or 'ai'
     infixes = [1]  # the suffix will be '.mjpeg', the number is the "infix" because it goes in between prefix and suffix, like "ti.5.mjpeg"
     for filename in os.listdir():
@@ -57,33 +56,35 @@ def transmit(output): #TODO code for camera to reply to rio
 
 m = None
 while True:
-    transmit('camera')
+    #transmit('camera')
     #print('top of while')
     #print(uart.any())
     if uart.any() > 0:
         print(f'uart.any(): {uart.any()}')
         msg = uart.readline()  # ".read()" by itself doesn't work, there's number of bytes, timeout, etc.
-        msg = msg.decode('ascii')
+        msg = msg.decode('ascii').strip()
         print(f'msg: {msg}')
-        led = machine.LED("LED_RED")
-        led.on()
         if msg[0] != CAMID:
             print(f"we got a msg but it's not for our camid ({CAMID}): {msg}")
         #elif msg == bytes(f'{CAMID},ti\n', 'ascii'):  #b'1,ti\n'
-        elif msg == f'{CAMID},ti\n':
+        elif msg == f'{CAMID},ti':
+            led = machine.LED("LED_RED")
+            led.on()
             print('got teleop init')
             filename = compute_filename('ti')
             m = mjpeg.Mjpeg(filename)
             #transmit(b'ti')
         #elif msg == b'ai\n':
-        elif msg == f'{CAMID},ai\n':
+        elif msg == f'{CAMID},ai':
+            led = machine.LED("LED_RED")
+            led.on()
             print('got auto init')
             filename = compute_filename('ai')
             m = mjpeg.Mjpeg(filename)
             #transmit(b'ai')
         #elif msg == b'di\n':
         #elif msg == bytes(f'{CAMID},di\n', 'ascii'):
-        elif msg == f'{CAMID},di\n':
+        elif msg == f'{CAMID},di':
             print("got di")
             if m is not None:  # if already disabled, do nothing
                 m.close()
@@ -91,6 +92,9 @@ while True:
                 led.off()
                 #transmit(b'di')
                 machine.reset()
+        else:
+            print("It didn't work")
+            print(f'{CAMID},ai')
     # done with msg handling, do video
     print(m)
     if m:
