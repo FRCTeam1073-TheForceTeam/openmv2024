@@ -12,9 +12,6 @@ import machine
 import mjpeg
 #import camnet
 
-from camid import CAMID  # TODO: make CAMIDs regular strs not b''
-print(f'camera id: {CAMID}')
-
 sensor.reset()  # Reset and initialize the sensor.
 sensor.set_pixformat(sensor.RGB565)  # Set pixel format to RGB565 (or GRAYSCALE)
 sensor.set_framesize(sensor.QVGA)  # Set frame size to QVGA (320x240)
@@ -29,6 +26,15 @@ uart = UART(3, 2000000, bits=8, parity=0, stop=1, timeout_char=2000)  # default 
 control_pin = Pin("P3", Pin.OUT)
 control_pin.value(0)  # 0 should be receive
 #sc = camnet.SerialComms('1')
+
+
+def get_camid():
+    for filename in os.listdir():
+        print(filename)
+        splitted = filename.split('-')
+        if len(splitted) == 2:
+            if splitted[0] == 'camid':
+                return splitted[1]
 
 def compute_filename(prefix):  # prefix is 'ti' or 'ai'
     infixes = [1]  # the suffix will be '.mjpeg', the number is the "infix" because it goes in between prefix and suffix, like "ti.5.mjpeg"
@@ -53,8 +59,21 @@ def transmit(output): #TODO code for camera to reply to rio
         uart.write(',')
     uart.write('\n')
     control_pin.value(0)
-
+    import sensor
+    import image
+    import time
+    import math
+    import sys
+    import os
+    from pyb import UART
+    from machine import Pin
+    import machine
 m = None
+camid = get_camid()
+print(f'camid: {camid}')
+if not camid:
+    print('camid got messed up somehow')
+    sys.exit(1)
 while True:
     #transmit('camera')
     #print('top of while')

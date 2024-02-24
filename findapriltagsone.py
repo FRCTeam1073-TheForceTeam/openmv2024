@@ -16,12 +16,11 @@ import os
 from pyb import UART
 
 
-print(os.listdir())
-import camnet
+from camid import CAMID
 
 sensor.reset()
 sensor.set_pixformat(sensor.RGB565)
-sensor.set_framesize(sensor.QQVGA)
+sensor.set_framesize(sensor.QVGA)
 sensor.skip_frames(time=5000)
 sensor.set_auto_gain(False)  # must turn this off to prevent image washout...
 sensor.set_auto_whitebal(False)  # must turn this off to prevent image washout...
