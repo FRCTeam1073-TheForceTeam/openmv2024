@@ -81,12 +81,12 @@ while True:
     if uart.any() > 0:
         print(f'uart.any(): {uart.any()}')
         msg = uart.readline()  # ".read()" by itself doesn't work, there's number of bytes, timeout, etc.
-        msg = msg.decode('ascii').strip()
+        #msg = msg.decode('ascii').strip()
         print(f'msg: {msg}')
-        if msg[0] != CAMID:
-            print(f"we got a msg but it's not for our camid ({CAMID}): {msg}")
-        #elif msg == bytes(f'{CAMID},ti\n', 'ascii'):  #b'1,ti\n'
-        elif msg == f'{CAMID},ti':
+        if msg[0] != camid:
+            print(f"we got a msg but it's not for our camid ({camid}): {msg}")
+        #elif msg == bytes(f'{camid},ti\n', 'ascii'):  #b'1,ti\n'
+        elif msg == f'{camid},ti':
             led = machine.LED("LED_RED")
             led.on()
             print('got teleop init')
@@ -94,7 +94,7 @@ while True:
             m = mjpeg.Mjpeg(filename)
             #transmit(b'ti')
         #elif msg == b'ai\n':
-        elif msg == f'{CAMID},ai':
+        elif msg == f'{camid},ai':
             led = machine.LED("LED_RED")
             led.on()
             print('got auto init')
@@ -102,8 +102,8 @@ while True:
             m = mjpeg.Mjpeg(filename)
             #transmit(b'ai')
         #elif msg == b'di\n':
-        #elif msg == bytes(f'{CAMID},di\n', 'ascii'):
-        elif msg == f'{CAMID},di':
+        #elif msg == bytes(f'{camid},di\n', 'ascii'):
+        elif msg == f'{camid},di':
             print("got di")
             if m is not None:  # if already disabled, do nothing
                 m.close()
@@ -114,7 +114,7 @@ while True:
 
         else:
             print("It didn't work")
-            print(f'{CAMID},ai')
+            print(f'{camid},ai')
     # done with msg handling, do video
     print(m)
     if m:
