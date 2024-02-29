@@ -114,7 +114,6 @@ while True:
 
         else:
             print("It didn't work")
-            print(f'{camid},ai')
     # done with msg handling, do video
     print(m)
     if m:
