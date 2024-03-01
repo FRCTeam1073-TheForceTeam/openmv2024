@@ -59,15 +59,7 @@ def transmit(output): #TODO code for camera to reply to rio
         uart.write(',')
     uart.write('\n')
     control_pin.value(0)
-    import sensor
-    import image
-    import time
-    import math
-    import sys
-    import os
-    from pyb import UART
-    from machine import Pin
-    import machine
+
 m = None
 camid = get_camid()
 print(f'camid: {camid}')
@@ -94,21 +86,6 @@ while True:
             m = mjpeg.Mjpeg(filename)
             #transmit(b'ti')
         #elif msg == b'ai\n':
-        elif msg == f'{camid},ap':
-            look = True
-            while look == True:
-                img = sensor.snapshot()
-                for tag in img.find_apriltags(families=tag_families):  # defaults to TAG36H11 without "families".
-                    img.draw_rectangle(tag.rect(), color=(255, 0, 0))
-                    img.draw_cross(tag.cx(), tag.cy(), color=(0, 255, 0))
-                    print_args = (family_name(tag), tag.id(), (180 * tag.rotation()) / math.pi)
-                    print("Tag Family %s, Tag ID %d, rotation %f (degrees)" % print_args)
-                    transmit(print_args)
-                    #transmit(struct.pack(print_args))
-                    #transmit('1,a')
-
-                    if(img.find_apriltags()):
-                        look = False
         elif msg == f'{camid},ai':
             led = machine.LED("LED_RED")
             led.on()
@@ -126,6 +103,21 @@ while True:
                 led.off()
                 #transmit(b'di')
                 #machine.reset()
+        elif msg == f'{camid},ap':
+            look = True
+            while look == True:
+                img = sensor.snapshot()
+                for tag in img.find_apriltags(families=tag_families):  # defaults to TAG36H11 without "families".
+                    img.draw_rectangle(tag.rect(), color=(255, 0, 0))
+                    img.draw_cross(tag.cx(), tag.cy(), color=(0, 255, 0))
+                    print_args = (family_name(tag), tag.id(), (180 * tag.rotation()) / math.pi)
+                    print("Tag Family %s, Tag ID %d, rotation %f (degrees)" % print_args)
+                    transmit(print_args)
+                    #transmit(struct.pack(print_args))
+                    #transmit('1,a')
+
+                    if(img.find_apriltags()):
+                        look = False
 
         else:
             print("It didn't work")
