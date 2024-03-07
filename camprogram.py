@@ -13,6 +13,8 @@ import mjpeg
 #import camnet
 
 sensor.reset()  # Reset and initialize the sensor.
+led = machine.LED("LED_RED")
+led.off()
 sensor.set_pixformat(sensor.RGB565)  # Set pixel format to RGB565 (or GRAYSCALE)
 sensor.set_framesize(sensor.QQVGA)  # Set frame size to QVGA (320x240)
 sensor.skip_frames(time=2000)  # Wait for settings take effect.
@@ -26,6 +28,20 @@ uart = UART(3, 2000000, bits=8, parity=0, stop=1, timeout_char=2000)  # default 
 control_pin = Pin("P3", Pin.OUT)
 control_pin.value(0)  # 0 should be receive
 #sc = camnet.SerialComms('1')
+
+
+tag_families = 0
+tag_families |= image.TAG16H5  # comment out to disable this family
+tag_families |= image.TAG25H7  # comment out to disable this family
+tag_families |= image.TAG25H9  # comment out to disable this family
+tag_families |= image.TAG36H10  # comment out to disable this family
+tag_families |= image.TAG36H11  # comment out to disable this family (default family)
+tag_families |= image.ARTOOLKIT  # comment out to disable this family
+
+
+def family_name(tag):
+    if tag.family() == image.TAG36H11:
+        return "TAG36H11"
 
 
 def get_camid():
@@ -55,6 +71,8 @@ def compute_filename(prefix):  # prefix is 'ti' or 'ai'
 def transmit(output): #TODO code for camera to reply to rio
     control_pin.value(1)
     for element in output:
+        element = str(element)
+        print(f'element: {element} type: {type(element)}')
         uart.write(element)
         uart.write(',')
     uart.write('\n')
@@ -87,7 +105,6 @@ while True:
             #transmit(b'ti')
         #elif msg == b'ai\n':
         elif msg == f'{camid},ai':
-            led = machine.LED("LED_RED")
             led.on()
             print('got auto init')
             filename = compute_filename('ai')
@@ -104,14 +121,15 @@ while True:
                 #transmit(b'di')
                 #machine.reset()
         elif msg == f'{camid},ap':
+            led.on()
             look = True
             while look == True:
                 img = sensor.snapshot()
                 for tag in img.find_apriltags(families=tag_families):  # defaults to TAG36H11 without "families".
                     img.draw_rectangle(tag.rect(), color=(255, 0, 0))
                     img.draw_cross(tag.cx(), tag.cy(), color=(0, 255, 0))
-                    print_args = (family_name(tag), tag.id(), (180 * tag.rotation()) / math.pi)
-                    print("Tag Family %s, Tag ID %d, rotation %f (degrees)" % print_args)
+                    print_args = (family_name(tag), tag.id(), (180 * tag.rotation()) / math.pi, tag.x_translation(), tag.y_translation(), tag.z_translation())
+                    print(print_args)
                     transmit(print_args)
                     #transmit(struct.pack(print_args))
                     #transmit('1,a')
