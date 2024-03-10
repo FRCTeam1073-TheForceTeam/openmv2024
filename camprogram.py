@@ -134,6 +134,7 @@ while True:
         elif cmd == 'ap':
             found_tags = []
             tid = int(cmd_args[2])
+            print(f'tid: {tid} type: {type(tid)}')
             led = machine.LED("LED_RED")
             led.off()
             led_g.off()
@@ -141,7 +142,11 @@ while True:
             img = sensor.snapshot()
             for tag in img.find_apriltags():  # defaults to TAG36H11 without "families".
                 #[(4,1,65,7918,33)]
-                if tag.id() == tid or tid == 0:
+                print(tid == "0")
+                print(tid == 0)
+                if tag.id() == tid or tid == "0" or tid == 0:
+                    if tid == "0" or tid == 0:
+                        print("it's zero, either kind")
                     img.draw_rectangle(tag.rect(), color=(255, 0, 0))
                     img.draw_cross(tag.cx(), tag.cy(), color=(0, 255, 0))
                     tag_area = (tag.w() * tag.h())
