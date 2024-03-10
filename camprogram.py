@@ -6,15 +6,16 @@ import time
 import math
 import sys
 import os
-from pyb import UART
-from machine import Pin
+#from pyb import UART
+from machine import Pin, UART
+# I guess the rt1060 doesn't have pyb shrug man emoji
 import machine
 import mjpeg
 #import camnet
 
 sensor.reset()  # Reset and initialize the sensor.
-sensor.set_pixformat(sensor.RGB565)  # Set pixel format to RGB565 (or GRAYSCALE)
-sensor.set_framesize(sensor.QQVGA)  # Set frame size to QVGA (320x240)
+sensor.set_pixformat(sensor.GRAYSCALE)  # Set pixel format to RGB565 (or GRAYSCALE)
+sensor.set_framesize(sensor.QVGA)  # Set frame size to QVGA (320x240)
 sensor.skip_frames(time=2000)  # Wait for settings take effect.
 #sensor.set_vflip(False)
 #sensor.set_hmirror(True)
@@ -23,24 +24,17 @@ print(f'done with sensor {time.time()}')
 
 
 # Always pass UART 3 for the UART number for your OpenMV Cam.
+# unless it's the rt1060 on peppersass then it's 1.
+# see pinout diagram https://openmv.io/products/openmv-cam-rt
 # The second argument is the UART baud rate. For a more advanced UART control
 # example see the BLE-Shield driver.
-uart = UART(3, 2000000, bits=8, parity=0, stop=1, timeout_char=2000)  # default (200) was too low
+uart = UART(1, 1000000, bits=8, parity=0, stop=1, timeout_char=2000)  # default (200) was too low
 control_pin = Pin("P3", Pin.OUT)
 control_pin.value(0)  # 0 should be receive
-print(f'done setting uart and pins {time.time()}')
+print('done setting uart and pins.')
 led = machine.LED("LED_RED")
 led_g = machine.LED("LED_GREEN")
 led_b = machine.LED("LED_BLUE")
-#sc = camnet.SerialComms('1')
-
-#tag_families = 0
-#tag_families |= image.TAG16H5  # comment out to disable this family
-#tag_families |= image.TAG25H7  # comment out to disable this family
-#tag_families |= image.TAG25H9  # comment out to disable this family
-#tag_families |= image.TAG36H10  # comment out to disable this family
-#tag_families |= image.TAG36H11  # comment out to disable this family (default family)
-#tag_families |= image.ARTOOLKIT  # comment out to disable this family
 
 led_g.on()
 def get_camid():
@@ -67,19 +61,19 @@ def compute_filename(prefix):  # prefix is 'ti' or 'ai'
     filename = f'{prefix}.{infix}.mjpeg'
     return filename
 
-def family_name(tag):
-    if tag.family() == image.TAG16H5:
-        return "TAG16H5"
-    if tag.family() == image.TAG25H7:
-        return "TAG25H7"
-    if tag.family() == image.TAG25H9:
-        return "TAG25H9"
-    if tag.family() == image.TAG36H10:
-        return "TAG36H10"
-    if tag.family() == image.TAG36H11:
-        return "TAG36H11"
-    if tag.family() == image.ARTOOLKIT:
-        return "ARTOOLKIT"
+#def family_name(tag):
+#    if tag.family() == image.TAG16H5:
+#        return "TAG16H5"
+#    if tag.family() == image.TAG25H7:
+#        return "TAG25H7"
+#    if tag.family() == image.TAG25H9:
+#        return "TAG25H9"
+#    if tag.family() == image.TAG36H10:
+#        return "TAG36H10"
+#    if tag.family() == image.TAG36H11:
+#        return "TAG36H11"
+#    if tag.family() == image.ARTOOLKIT:
+#        return "ARTOOLKIT"
 
 
 def transmit(camid, cmd, output): #TODO code for camera to reply to rio
@@ -111,15 +105,15 @@ if not camid:
 while True:
     img = sensor.snapshot()
     tid = 0
-    #sensor.set_vflip(False)
-    #sensor.set_hmirror(True)
-    #transmit('camera')
-    #print('top of while')
-    #print(uart.any())
     if uart.any() > 0:
         print(f'uart.any(): {uart.any()}')
-        msg = uart.readline()  # ".read()" by itself doesn't work, there's number of bytes, timeout, etc.
-        msg = msg.decode('ascii').strip()
+        try:
+            msg = uart.readline()  # ".read()" by itself doesn't work, there's number of bytes, timeout, etc.
+            msg = msg.decode('ascii').strip()
+        except UnicodeError:
+            print("Unicode Error; Don't care")
+            continue
+            # 1,ap,11\n
         cmd_args = msg.split(',')
         msg_camid = cmd_args[0]
         cmd = cmd_args[1]
@@ -146,6 +140,7 @@ while True:
             led_b.on()
             img = sensor.snapshot()
             for tag in img.find_apriltags():  # defaults to TAG36H11 without "families".
+                #[(4,1,65,7918,33)]
                 if tag.id() == tid or tid == 0:
                     img.draw_rectangle(tag.rect(), color=(255, 0, 0))
                     img.draw_cross(tag.cx(), tag.cy(), color=(0, 255, 0))
