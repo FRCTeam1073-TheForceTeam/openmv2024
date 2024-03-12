@@ -45,36 +45,6 @@ def get_camid():
             if splitted[0] == 'camid':
                 return splitted[1]
 
-def compute_filename(prefix):  # prefix is 'ti' or 'ai'
-    infixes = [1]  # the suffix will be '.mjpeg', the number is the "infix" because it goes in between prefix and suffix, like "ti.5.mjpeg"
-    for filename in os.listdir():
-        if 'mjpeg' not in filename:
-            continue
-        splitted = filename.split('.')
-        if len(splitted) == 3 and splitted[1].isdigit():
-            existing_infix_int = int(splitted[1])
-            infixes.append(existing_infix_int)
-
-    infixes.sort()  # .sort() is in-place
-    # infixes[-1] is now the highest number of the files that already exist
-    infix = infixes[-1] + 1
-    filename = f'{prefix}.{infix}.mjpeg'
-    return filename
-
-#def family_name(tag):
-#    if tag.family() == image.TAG16H5:
-#        return "TAG16H5"
-#    if tag.family() == image.TAG25H7:
-#        return "TAG25H7"
-#    if tag.family() == image.TAG25H9:
-#        return "TAG25H9"
-#    if tag.family() == image.TAG36H10:
-#        return "TAG36H10"
-#    if tag.family() == image.TAG36H11:
-#        return "TAG36H11"
-#    if tag.family() == image.ARTOOLKIT:
-#        return "ARTOOLKIT"
-
 
 def transmit(camid, cmd, output): #TODO code for camera to reply to rio
     print(f'raw output arg to transmit(): {output} type: {type(output)}')
@@ -128,7 +98,7 @@ while True:
             led_b.off()
             led.on()
             print('got teleop init')
-            filename = compute_filename('ti')
+            filename = 'null'
             m = mjpeg.Mjpeg(filename)
         #elif msg == f'{camid},ap,{tid}':
         elif cmd == 'ap':
@@ -165,7 +135,7 @@ while True:
             led_b.on()
             led.on()
             print('got auto init')
-            filename = compute_filename('ai')
+            filename = 'null2'
             m = mjpeg.Mjpeg(filename)
         elif msg == f'{camid},di':
             print("got di")
