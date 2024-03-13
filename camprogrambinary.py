@@ -28,10 +28,15 @@ print(f'done with sensor {time.time()}')
 # see pinout diagram https://openmv.io/products/openmv-cam-rt
 # The second argument is the UART baud rate. For a more advanced UART control
 # example see the BLE-Shield driver.
-uart = UART(1, 1000000, bits=8, parity=0, stop=1, timeout_char=2000)  # default (200) was too low
+uart = UART(1, 1000000, bits=8, parity=0, stop=1, timeout=30, timeout_char=30)
 control_pin = Pin("P3", Pin.OUT)
 control_pin.value(0)  # 0 should be receive
-print('done setting uart and pins.')
+print('Done setting uart and pins.')
+
+
+# Allocate packet buffers:
+input_buffer = bytearray(8)
+response_buffer = bytearray(8)
 
 def get_camid():
     for filename in os.listdir():
@@ -44,20 +49,18 @@ def get_camid():
 
 def transmitAprilTag(camid, cmd, output):
     print(f'raw output arg to transmit(): {output} type: {type(output)}')
-    response = bytearray(8)
-    response[0] = 0   #ID out rio
-    response[1] = cmd # Cmd responding to
-    response[2] = output[0]  #Found Tag ID
-    response[3] = output[1]  #X center
-    response[4] = output[2]  #Y Center
-    response[5] = output[3]  #Area
+    response_buffer[0] = 0   #ID out rio
+    response_buffer[1] = cmd # Cmd responding to
+    response_buffer[2] = output[0]  #Found Tag ID
+    response_buffer[3] = output[1]  #X center
+    response_buffer[4] = output[2]  #Y Center
+    response_buffer[5] = output[3]  #Area
 
     control_pin.value(1)
-    uart.write(response)
-    uart.flush()
+    uart.write(response_buffer)
+    uart.flush()   # Wait for bytes to all send before we drop the transmit line.
     control_pin.value(0)
 
-input_buffer = bytearray(8)
 
 camid = get_camid()
 print(f'camid: {camid}')
@@ -66,35 +69,46 @@ if not camid:
     sys.exit(1)
 
 while True:
-    img = sensor.snapshot()
     tid = 0
     byte_count = uart.any()
     print(f'byte_count: {byte_count}')
-    if byte_count >= 8:
-        bytes_read = uart.readinto(input_buffer, 8)  # ".read()" by itself doesn't work, there's number of bytes, timeout, etc.
+    if byte_count >= 1:
+        # As soon as we get a byte we start reading all 8 bytes.
+        bytes_read = uart.readinto(input_buffer, 8)
+
+        if bytes_read == None:
+            print("Read timeout...")
+            continue
+        else:
+            print(f'msg: {input_buffer}')
+
+        # Extract camera ID and command byte from input buffer.
         msg_camid = input_buffer[0]
         cmd = input_buffer[1]
-        print(f'msg: {input_buffer}')
-        found = False
+
+        # Check if this message is for us.
         if msg_camid != camid:
-            print(f"we got a msg but it's not for our camid ({camid})")
-        elif cmd == 3:
-            tid = input_buffer[2]
-            print(f'tid: {tid}')
+            print(f"Not for camid ({camid})")
+        elif cmd == 3:   # Find apriltag command is 3
+            tid = input_buffer[2]   # 3rd byte is which tag ID to find.
+            print(f'find tid: {tid}')
             img = sensor.snapshot()
+            found = False
             for tag in img.find_apriltags():  # defaults to TAG36H11 without "families".
                 if tag.id() == tid:
                     img.draw_rectangle(tag.rect(), color=(255, 0, 0))
-                    img.draw_cross(tag.cx(), tag.cy(), color=(0, 255, 0))
                     tag_data = (tag.id(), (tag.cx() /4), (tag.cy() /4), (tag_area /64))
-                    print("Tag ID %d, Tag Cener X %i, Tag Center Y %i, Tag Area %i" % print_args)
-                    #found_tags.append(tag_data)
+                    print("Found Tag ID %d, CX %i, CY %i, Area %i" % tag_data)
                     transmit(camid, cmd, tag_data)
                     found = True
                     break
-            transmit(camid, cmd, (0xFF, 0, 0, 0))
+
+            # If we never found the match then we send a "not found" message.
+            if found == False:
+                transmit(camid, cmd, (0xFF, 0, 0, 0))
         else:
             print(f"Unknow command: {cmd}")
-            transmit(camid, cmd, (0, 0, 0, 0))
+            # Send a response from us even if unknown.
+            transmit(camid, cmd, (0xFF, 0, 0, 0))
 
     time.sleep_ms(10)
