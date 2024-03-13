@@ -47,7 +47,7 @@ def get_camid():
                 return splitted[1]
 
 
-def transmitAprilTag(camid, cmd, output):
+def transmit_april_tag(camid, cmd, output):
     print(f'raw output arg to transmit(): {output} type: {type(output)}')
     response_buffer[0] = 0   #ID out rio
     response_buffer[1] = cmd # Cmd responding to
@@ -62,6 +62,13 @@ def transmitAprilTag(camid, cmd, output):
     control_pin.value(0)
 
 
+def clear_input_buffer():
+    input_buffer[0] = 0
+    input_buffer[1] = 0
+    input_buffer[2] = 0
+
+
+
 camid = get_camid()
 print(f'camid: {camid}')
 if not camid:
@@ -69,12 +76,13 @@ if not camid:
     sys.exit(1)
 
 while True:
+    clear_input_buffer()
     tid = 0
     byte_count = uart.any()
     print(f'byte_count: {byte_count}')
     if byte_count >= 1:
         # As soon as we get a byte we start reading all 8 bytes.
-        bytes_read = uart.readinto(input_buffer, 8)
+        bytes_read = uart.readinto(input_buffer)
 
         if bytes_read == None:
             print("Read timeout...")
@@ -99,16 +107,16 @@ while True:
                     img.draw_rectangle(tag.rect(), color=(255, 0, 0))
                     tag_data = (tag.id(), (tag.cx() /4), (tag.cy() /4), (tag_area /64))
                     print("Found Tag ID %d, CX %i, CY %i, Area %i" % tag_data)
-                    transmit(camid, cmd, tag_data)
+                    transmit_april_tag(camid, cmd, tag_data)
                     found = True
                     break
 
             # If we never found the match then we send a "not found" message.
             if found == False:
-                transmit(camid, cmd, (0xFF, 0, 0, 0))
+                transmit_april_tag(camid, cmd, (0xFF, 0, 0, 0))
         else:
             print(f"Unknow command: {cmd}")
             # Send a response from us even if unknown.
-            transmit(camid, cmd, (0xFF, 0, 0, 0))
+            transmit_april_tag(camid, cmd, (0xFF, 0, 0, 0))
 
     time.sleep_ms(10)
