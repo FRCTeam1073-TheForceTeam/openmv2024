@@ -49,8 +49,8 @@ def get_camid():
 
 def transmit_april_tag(camid, cmd, output):
     print(f'raw output arg to transmit(): {output} type: {type(output)}')
-    response_buffer[0] = 0   #ID out rio
-    response_buffer[1] = cmd # Cmd responding to
+    response_buffer[0] = camid   #ID out to rio
+    response_buffer[1] = cmd     # Cmd responding to
     response_buffer[2] = output[0]  #Found Tag ID
     response_buffer[3] = output[1]  #X center
     response_buffer[4] = output[2]  #Y Center
@@ -106,7 +106,7 @@ while True:
                 if tag.id() == tid:
                     img.draw_rectangle(tag.rect(), color=(255, 0, 0))
                     tag_area = tag.w()*tag.h()
-                    tag_data = (tag.id(), int(tag.cx() /4), int(tag.cy() /4), int(tag_area /64))
+                    tag_data = (tag.id(), int(tag.cx() /2), int(tag.cy() /2), int(tag_area /64))
                     print("Found Tag ID %d, CX %i, CY %i, Area %i" % tag_data)
                     transmit_april_tag(camid, cmd, tag_data)
                     found = True
