@@ -28,7 +28,7 @@ print(f'done with sensor {time.time()}')
 # see pinout diagram https://openmv.io/products/openmv-cam-rt
 # The second argument is the UART baud rate. For a more advanced UART control
 # example see the BLE-Shield driver.
-uart = UART(1, 1000000, bits=8, parity=0, stop=1, timeout=30, timeout_char=30)
+uart = UART(1, 1000000, bits=8, parity=None, stop=1, timeout=10, timeout_char=10)
 control_pin = Pin("P3", Pin.OUT)
 control_pin.value(0)  # 0 should be receive
 print('Done setting uart and pins.')
@@ -44,7 +44,7 @@ def get_camid():
         splitted = filename.split('-')
         if len(splitted) == 2:
             if splitted[0] == 'camid':
-                return splitted[1]
+                return int(splitted[1])
 
 
 def transmit_april_tag(camid, cmd, output):
@@ -79,7 +79,7 @@ while True:
     clear_input_buffer()
     tid = 0
     byte_count = uart.any()
-    print(f'byte_count: {byte_count}')
+ #   print(f'byte_count: {byte_count}')
     if byte_count >= 1:
         # As soon as we get a byte we start reading all 8 bytes.
         bytes_read = uart.readinto(input_buffer)
@@ -88,7 +88,7 @@ while True:
             print("Read timeout...")
             continue
         else:
-            print(f'msg: {input_buffer}')
+            print(f'msg: len={len(input_buffer)} [0]={input_buffer[0]} [1]={input_buffer[1]} [2]={input_buffer[2]}')
 
         # Extract camera ID and command byte from input buffer.
         msg_camid = input_buffer[0]
@@ -105,7 +105,8 @@ while True:
             for tag in img.find_apriltags():  # defaults to TAG36H11 without "families".
                 if tag.id() == tid:
                     img.draw_rectangle(tag.rect(), color=(255, 0, 0))
-                    tag_data = (tag.id(), (tag.cx() /4), (tag.cy() /4), (tag_area /64))
+                    tag_area = tag.w()*tag.h()
+                    tag_data = (tag.id(), int(tag.cx() /4), int(tag.cy() /4), int(tag_area /64))
                     print("Found Tag ID %d, CX %i, CY %i, Area %i" % tag_data)
                     transmit_april_tag(camid, cmd, tag_data)
                     found = True
@@ -113,10 +114,10 @@ while True:
 
             # If we never found the match then we send a "not found" message.
             if found == False:
-                transmit_april_tag(camid, cmd, (0xFF, 0, 0, 0))
+                transmit_april_tag(camid, cmd, (0xff, 0, 0, 0))
         else:
             print(f"Unknow command: {cmd}")
             # Send a response from us even if unknown.
-            transmit_april_tag(camid, cmd, (0xFF, 0, 0, 0))
+            transmit_april_tag(camid, cmd, (0xff, 0, 0, 0))
 
     time.sleep_ms(10)
