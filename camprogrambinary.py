@@ -1,5 +1,7 @@
 #!/bin/python3
 
+
+
 import sensor
 import image
 import time
@@ -16,7 +18,12 @@ import mjpeg
 sensor.reset()  # Reset and initialize the sensor.
 sensor.set_pixformat(sensor.GRAYSCALE)  # Set pixel format to RGB565 (or GRAYSCALE)
 sensor.set_framesize(sensor.QVGA)  # Set frame size to QVGA (320x240)
+sensor.set_gainceiling(64)
+sensor.set_auto_exposure(False, exposure_us = 10000)
 sensor.skip_frames(time=2000)  # Wait for settings take effect.
+led_g = machine.LED("LED_GREEN")
+led_b = machine.LED("LED_BLUE")
+led_r = machine.LED("LED_RED")
 #sensor.set_vflip(False)
 #sensor.set_hmirror(True)
 print(f'done with sensor {time.time()}')
@@ -45,6 +52,17 @@ def get_camid():
         if len(splitted) == 2:
             if splitted[0] == 'camid':
                 return int(splitted[1])
+
+def to_two_bytes(num):
+    lowpart = 0
+    highpart = 0
+    if num >= 255:  # pixels start at 0
+        lowpart = 255
+        highpart = num - lowpart
+    else:
+        lowpart = num
+        # highpart is just zero
+    return lowpart, highpart  # multiple returns is almost always a bad idea but I'm doing it anyway
 
 
 def transmit_april_tag(camid, cmd, output):
@@ -75,7 +93,11 @@ if not camid:
     print('camid got messed up somehow')
     sys.exit(1)
 
+led_counter = 0
 while True:
+    led_counter += 1
+    if counter % 2 == 0:
+        led_b.on()
     clear_input_buffer()
     tid = 0
     byte_count = uart.any()
@@ -95,6 +117,7 @@ while True:
         cmd = input_buffer[1]
 
         # Check if this message is for us.
+        # ROI max values: 53.5in (closest)... 193.5in (farthest) --> from speaker
         if msg_camid != camid:
             print(f"Not for camid ({camid})")
         elif cmd == 3:   # Find apriltag command is 3
@@ -102,22 +125,37 @@ while True:
             print(f'find tid: {tid}')
             img = sensor.snapshot()
             found = False
-            for tag in img.find_apriltags():  # defaults to TAG36H11 without "families".
+            for tag in img.find_apriltags(roi=(0,0,320,180)):  # defaults to TAG36H11 without "families".
+                # roi=(0,0,320,180) measured on 3/18/2024
+                # 2 bytes for x
                 if tag.id() == tid:
+                    if led_counter % 2 == 0:
+                        led_b.off()
+                        led_r.off()
+                        led_g.on()
                     img.draw_rectangle(tag.rect(), color=(255, 0, 0))
                     tag_area = tag.w()*tag.h()
-                    tag_data = (tag.id(), int(tag.cx() /2), int(tag.cy() /2), int(tag_area /64))
-                    print("Found Tag ID %d, CX %i, CY %i, Area %i" % tag_data)
+                    x_low, x_high = to_two_bytes(tag.cx())
+                    #y_low, y_high = to_two_bytes(tag.cy())
+                    tag_data = (tag.id(), x_low, x_high, tag.cy(), int(tag_area /64))
+                    print(f"Found Tag data {tag_data}")
                     transmit_april_tag(camid, cmd, tag_data)
                     found = True
+                    if counter % 2 == 0:
+                        led_g.off()
+                        led_b.on()
                     break
 
             # If we never found the match then we send a "not found" message.
             if found == False:
+                if counter % 2 == 0:
+                    led_r.on()
                 transmit_april_tag(camid, cmd, (0xff, 0, 0, 0))
         else:
             print(f"Unknow command: {cmd}")
             # Send a response from us even if unknown.
+            if counter % 2 == 0:
+                led_b.on()
             transmit_april_tag(camid, cmd, (0xff, 0, 0, 0))
 
-    time.sleep_ms(10)
+    #time.sleep_ms(10)
