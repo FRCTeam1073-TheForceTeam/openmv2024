@@ -70,9 +70,11 @@ def transmit_april_tag(camid, cmd, output):
     response_buffer[0] = camid   #ID out to rio
     response_buffer[1] = cmd     # Cmd responding to
     response_buffer[2] = output[0]  #Found Tag ID
-    response_buffer[3] = output[1]  #X center
-    response_buffer[4] = output[2]  #Y Center
-    response_buffer[5] = output[3]  #Area
+    response_buffer[3] = output[1]  #X high center
+    response_buffer[4] = output[2]  #X low center
+    response_buffer[5] = output[3]  #Y Center
+    response_buffer[6] = output[4]  #Area
+    response_buffer[7] = output[5]  #y_rotation
 
     control_pin.value(1)
     uart.write(response_buffer)
@@ -96,7 +98,7 @@ if not camid:
 led_counter = 0
 while True:
     led_counter += 1
-    if counter % 2 == 0:
+    if led_counter % 2 == 0:
         led_b.on()
     clear_input_buffer()
     tid = 0
@@ -137,25 +139,25 @@ while True:
                     tag_area = tag.w()*tag.h()
                     x_low, x_high = to_two_bytes(tag.cx())
                     #y_low, y_high = to_two_bytes(tag.cy())
-                    tag_data = (tag.id(), x_low, x_high, tag.cy(), int(tag_area /64))
+                    tag_data = (tag.id(), x_low, x_high, tag.cy(), int(tag_area /64), int(tag.y_rotation() *10))
                     print(f"Found Tag data {tag_data}")
                     transmit_april_tag(camid, cmd, tag_data)
                     found = True
-                    if counter % 2 == 0:
+                    if led_counter % 2 == 0:
                         led_g.off()
                         led_b.on()
                     break
 
             # If we never found the match then we send a "not found" message.
             if found == False:
-                if counter % 2 == 0:
+                if led_counter % 2 == 0:
                     led_r.on()
-                transmit_april_tag(camid, cmd, (0xff, 0, 0, 0))
+                transmit_april_tag(camid, cmd, (0xff, 0, 0, 0, 0, 0))
         else:
             print(f"Unknow command: {cmd}")
             # Send a response from us even if unknown.
             if counter % 2 == 0:
                 led_b.on()
-            transmit_april_tag(camid, cmd, (0xff, 0, 0, 0))
+            transmit_april_tag(camid, cmd, (0xff, 0, 0, 0, 0, 0))
 
     #time.sleep_ms(10)
